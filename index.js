@@ -1,38 +1,42 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const app = express();
+const { QueryResultError } = require('pg-promise');
+const pgp = require('pg-promise')();
+
 const port = process.env.PORT || 3000; // Porta que a API irá ouvir (ou usa a porta definida nas variáveis de ambiente)
 
 // Importe o modelo Task
 const Task = require('./task');
 
-// Configurar o body-parser para lidar com JSON
 app.use(bodyParser.json());
 
-// Rota para criar uma tarefa
-app.post('/tasks', async (req, res) => {
+// Rota para listar todas as tarefas
+app.get('/', async (req, res) => {
     try {
-      const { titulo, descricao, done } = req.body; // Altere aqui
-      const newTask = await db.one(
-        'INSERT INTO tasks (title, description, done) VALUES ($1, $2, $3) RETURNING *',
-        [titulo, descricao, done]
-      );
-      res.json(newTask);
+      const tasks = await Task.getAll(); // Adicione 'await' aqui
+      res.setHeader('Content-Type', 'application/json');
+      res.json(tasks);
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Erro ao criar a tarefa' });
+      if (error.code === pgp.errors.queryResultErrorCode.noData) {
+        res.setHeader('Content-Type', 'application/json');
+        res.json([]);
+      } else {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao buscar as tarefas' });
+      }
     }
   });
   
-
-// Rota para listar todas as tarefas
-app.get('/tasks', async (req, res) => {
+// Rota para criar uma tarefa
+app.post('/tasks', async (req, res) => {
   try {
-    const tasks = await Task.getAll();
-    res.json(tasks);
+    const { titulo, descricao, done } = req.body;
+    const newTask = await Task.create(titulo, descricao, done);
+    res.json(newTask);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Erro ao buscar as tarefas' });
+    res.status(500).json({ error: 'Erro ao criar a tarefa' });
   }
 });
 
