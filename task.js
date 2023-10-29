@@ -9,20 +9,19 @@ const db = pgp({
 });
 
 class Task {
-  constructor(id, title, description, done) {
-    this.id = id;
-    this.title = title;
-    this.description = description;
-    this.done = done;
-  }
-
-  static async create(title, description, done) {
-    const data = await db.one(
+    constructor(id, titulo, descricao, done) {
+        this.id = id;
+        this.titulo = titulo; // Altere aqui
+        this.descricao = descricao; // Altere aqui
+        this.done = done;
+      }
+    
+      static create(titulo, descricao, done) {
+        return db.one(
           'INSERT INTO tasks (title, description, done) VALUES ($1, $2, $3) RETURNING *',
-          [title, description, done]
-      );
-      return new Task(data.id, data.title, data.description, data.done);
-  }
+          [titulo, descricao, done] // Altere aqui
+        ).then(data => new Task(data.id, data.titulo, data.descricao, data.done)); // Altere aqui
+      }
 
   static async getAll() {
     const tasks = await db.any('SELECT * FROM tasks');
